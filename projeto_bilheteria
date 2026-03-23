@@ -1,0 +1,99 @@
+#include <iostream>
+#include <iomanip>
+using namespace std;
+
+const int FILEIRAS = 15;
+const int POLTRONAS = 40;
+
+// Função para calcular o valor do ingresso
+float valorIngresso(int fileira) {
+    if (fileira >= 1 && fileira <= 5)
+        return 50.0;
+    else if (fileira >= 6 && fileira <= 10)
+        return 30.0;
+    else
+        return 15.0;
+}
+
+int main() {
+    int opcao;
+    bool teatro[FILEIRAS][POLTRONAS] = {false}; // false = livre, true = ocupado
+
+    do {
+        cout << "\n===== TEATRO =====\n";
+        cout << "0 - Finalizar\n";
+        cout << "1 - Reservar poltrona\n";
+        cout << "2 - Mapa de ocupacao\n";
+        cout << "3 - Faturamento\n";
+        cout << "Escolha: ";
+        cin >> opcao;
+
+        switch(opcao) {
+            case 1: {
+                int f, p;
+                cout << "Informe a fileira (1 a 15): ";
+                cin >> f;
+                cout << "Informe a poltrona (1 a 40): ";
+                cin >> p;
+
+                // Validação
+                if (f < 1 || f > 15 || p < 1 || p > 40) {
+                    cout << "Posicao invalida!\n";
+                    break;
+                }
+
+                if (!teatro[f-1][p-1]) {
+                    teatro[f-1][p-1] = true;
+                    cout << "Reserva realizada com sucesso!\n";
+                } else {
+                    cout << "Lugar ja ocupado!\n";
+                }
+                break;
+            }
+
+            case 2: {
+                cout << "\nMAPA DE OCUPACAO:\n";
+                for (int i = 0; i < FILEIRAS; i++) {
+                    for (int j = 0; j < POLTRONAS; j++) {
+                        if (teatro[i][j])
+                            cout << "# ";
+                        else
+                            cout << ". ";
+                    }
+                    cout << endl;
+                }
+                cout << "\nLegenda: '.' = livre | '#' = ocupado\n";
+                break;
+            }
+
+            case 3: {
+                int ocupados = 0;
+                float total = 0;
+
+                for (int i = 0; i < FILEIRAS; i++) {
+                    for (int j = 0; j < POLTRONAS; j++) {
+                        if (teatro[i][j]) {
+                            ocupados++;
+                            total += valorIngresso(i + 1);
+                        }
+                    }
+                }
+
+                cout << "\nQtde de lugares ocupados: " << ocupados << endl;
+                cout << fixed << setprecision(2);
+                cout << "Valor da bilheteria: R$ " << total << endl;
+                break;
+            }
+
+            case 0:
+                cout << "Encerrando sistema...\n";
+                break;
+
+            default:
+                cout << "Opcao invalida!\n";
+        }
+
+    } while (opcao != 0);
+
+    return 0;
+}
