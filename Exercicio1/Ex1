@@ -1,0 +1,48 @@
+// Receber através de digitação uma mensagem. 
+// Apresentar esta mensagem, centralizada, na linha 5 da tela.
+// À partir daí, cada letra desta mensagem deverá "cair", da linha 5 até a linha 20, 
+// simulando uma "cascata". Ao final, a mensagem deverá estar toda apresentada na linha 20.
+
+#include <iostream>
+#include <string>
+#include <thread>
+#include <chrono>
+
+using namespace std;
+
+void gotoxy(int x, int y) {
+    cout << "\033[" << y << ";" << x << "H";
+}
+
+int main() {
+    string msg;
+    cout << "Digite a mensagem: ";
+    getline(cin, msg);
+
+    int col = (80 - msg.size()) / 2;
+
+    // Linha 5
+    for (int i = 0; i < msg.size(); i++) {
+        gotoxy(col + i, 5);
+        cout << msg[i];
+    }
+
+    this_thread::sleep_for(chrono::milliseconds(500));
+
+    // Cascata
+    for (int i = 0; i < msg.size(); i++) {
+        for (int linha = 5; linha <= 20; linha++) {
+            gotoxy(col + i, linha);
+            cout << msg[i];
+            this_thread::sleep_for(chrono::milliseconds(50));
+
+            if (linha < 20) {
+                gotoxy(col + i, linha);
+                cout << " ";
+            }
+        }
+    }
+
+    gotoxy(0, 22);
+    return 0;
+}
