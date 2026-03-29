@@ -1,0 +1,55 @@
+#include <iostream>
+#include <vector>
+#include <algorithm>
+#include <random>
+#include <string>
+
+using namespace std;
+
+string gerarCarta(int naipe, int numero, int baralho) {
+    string carta = "";
+    carta += to_string(naipe);
+    if (numero < 10) carta += "0";
+    carta += to_string(numero);
+    carta += to_string(baralho);
+    return carta;
+}
+
+int main() {
+    vector<string> baralho;
+
+    // Criar 2 baralhos (104 cartas)
+    for (int b = 1; b <= 2; b++) {
+        for (int n = 1; n <= 4; n++) {
+            for (int c = 1; c <= 13; c++) {
+                baralho.push_back(gerarCarta(n, c, b));
+            }
+        }
+    }
+
+    // Embaralhar
+    random_device rd;
+    mt19937 g(rd());
+    shuffle(baralho.begin(), baralho.end(), g);
+
+    // Distribuir 11 cartas para 4 jogadores
+    vector<vector<string>> mao(4, vector<string>(11));
+
+    int index = 0;
+    for (int j = 0; j < 4; j++) {
+        for (int c = 0; c < 11; c++) {
+            mao[j][c] = baralho[index++];
+        }
+    }
+
+    // Mostrar mãos
+    for (int j = 0; j < 4; j++) {
+        cout << "Jogador " << j + 1 << ": ";
+        for (int c = 0; c < 11; c++) {
+            cout << mao[j][c] << " ";
+        }
+        cout << endl;
+    }
+
+    return 0;
+}
