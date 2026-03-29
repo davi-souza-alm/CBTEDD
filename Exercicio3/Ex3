@@ -1,0 +1,38 @@
+// À partir de uma lista de nomes disponível em um arquivo TXT, 
+// transforma-los em nomes no formato agenda telefônica. Exemplo:
+// José Antonio Santos Silva; Silva, José Antonio Santos
+
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <vector>
+
+using namespace std;
+
+int main() {
+    ifstream file("nomes.txt");
+    string linha;
+
+    while (getline(file, linha)) {
+        stringstream ss(linha);
+        vector<string> partes;
+        string palavra;
+
+        while (ss >> palavra) {
+            partes.push_back(palavra);
+        }
+
+        if (partes.size() > 0) {
+            string sobrenome = partes.back();
+            partes.pop_back();
+
+            cout << sobrenome << ", ";
+            for (string p : partes) {
+                cout << p << " ";
+            }
+            cout << endl;
+        }
+    }
+
+    return 0;
+}
