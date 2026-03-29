@@ -1,0 +1,34 @@
+// Receber através de digitação uma mensagem. 
+// Informar se esta mensagem é ou não um dado palíndromo (no caso de haver espaços no texto, 
+// desconsiderá-los para a verificação). Exemplos:
+// OVO, ARARA, SOCORRAM ME SUBI NO ONIBUS EM MARROCOS
+
+#include <iostream>
+#include <string>
+#include <algorithm>
+
+using namespace std;
+
+int main() {
+    string msg, limpa = "";
+
+    cout << "Digite a mensagem: ";
+    getline(cin, msg);
+
+    for (char c : msg) {
+        if (c != ' ') {
+            limpa += toupper(c);
+        }
+    }
+
+    string inversa = limpa;
+    reverse(inversa.begin(), inversa.end());
+
+    if (limpa == inversa) {
+        cout << "É palíndromo!" << endl;
+    } else {
+        cout << "Não é palíndromo!" << endl;
+    }
+
+    return 0;
+}
