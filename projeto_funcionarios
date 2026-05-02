@@ -1,0 +1,141 @@
+#include <iostream>
+#include <vector>
+#include <string>
+
+using namespace std;
+
+struct Funcionario {
+    int prontuario;
+    string nome;
+    double salario;
+};
+
+// Função para verificar se prontuário já existe
+bool prontuarioExiste(const vector<Funcionario>& lista, int prontuario) {
+    for (const auto& f : lista) {
+        if (f.prontuario == prontuario) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// Função para incluir funcionário
+void incluir(vector<Funcionario>& lista) {
+    Funcionario f;
+
+    cout << "Digite o prontuario: ";
+    cin >> f.prontuario;
+
+    if (prontuarioExiste(lista, f.prontuario)) {
+        cout << "Erro: prontuario ja cadastrado!\n";
+        return;
+    }
+
+    cin.ignore();
+    cout << "Digite o nome: ";
+    getline(cin, f.nome);
+
+    cout << "Digite o salario: ";
+    cin >> f.salario;
+
+    lista.push_back(f);
+    cout << "Funcionario cadastrado com sucesso!\n";
+}
+
+// Função para excluir funcionário
+void excluir(vector<Funcionario>& lista) {
+    int prontuario;
+    cout << "Digite o prontuario a excluir: ";
+    cin >> prontuario;
+
+    for (auto it = lista.begin(); it != lista.end(); ++it) {
+        if (it->prontuario == prontuario) {
+            lista.erase(it);
+            cout << "Funcionario excluido com sucesso!\n";
+            return;
+        }
+    }
+
+    cout << "Funcionario nao encontrado!\n";
+}
+
+// Função para pesquisar funcionário
+void pesquisar(const vector<Funcionario>& lista) {
+    int prontuario;
+    cout << "Digite o prontuario para pesquisa: ";
+    cin >> prontuario;
+
+    for (const auto& f : lista) {
+        if (f.prontuario == prontuario) {
+            cout << "Funcionario encontrado:\n";
+            cout << "Prontuario: " << f.prontuario << endl;
+            cout << "Nome: " << f.nome << endl;
+            cout << "Salario: " << f.salario << endl;
+            return;
+        }
+    }
+
+    cout << "Funcionario nao encontrado!\n";
+}
+
+// Função para listar funcionários
+void listar(const vector<Funcionario>& lista) {
+    double totalSalarios = 0;
+
+    if (lista.empty()) {
+        cout << "Nenhum funcionario cadastrado.\n";
+        return;
+    }
+
+    cout << "\nLista de Funcionarios:\n";
+    for (const auto& f : lista) {
+        cout << "----------------------\n";
+        cout << "Prontuario: " << f.prontuario << endl;
+        cout << "Nome: " << f.nome << endl;
+        cout << "Salario: " << f.salario << endl;
+        totalSalarios += f.salario;
+    }
+
+    cout << "----------------------\n";
+    cout << "Total dos salarios: " << totalSalarios << endl;
+}
+
+int main() {
+    vector<Funcionario> lista;
+    int opcao;
+
+    do {
+        cout << "\n=== MENU ===\n";
+        cout << "0. Sair\n";
+        cout << "1. Incluir\n";
+        cout << "2. Excluir\n";
+        cout << "3. Pesquisar\n";
+        cout << "4. Listar\n";
+        cout << "Escolha uma opcao: ";
+        cin >> opcao;
+
+        switch (opcao) {
+            case 1:
+                incluir(lista);
+                break;
+            case 2:
+                excluir(lista);
+                break;
+            case 3:
+                pesquisar(lista);
+                break;
+            case 4:
+                listar(lista);
+                break;
+            case 0:
+                cout << "Encerrando o programa...\n";
+                break;
+            default:
+                cout << "Opcao invalida!\n";
+        }
+
+    } while (opcao != 0);
+
+    return 0;
+}
