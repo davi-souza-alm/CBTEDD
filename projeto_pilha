@@ -1,0 +1,142 @@
+#include <iostream>
+
+using namespace std;
+
+const int TAM = 30;
+
+class PilhaVetor {
+private:
+    int topo;
+    int elementos[TAM];
+
+public:
+    PilhaVetor() {
+        topo = -1;
+    }
+
+    bool vazia() {
+        return topo == -1;
+    }
+
+    bool cheia() {
+        return topo == TAM - 1;
+    }
+
+    void push(int valor) {
+        if (!cheia()) {
+            topo++;
+            elementos[topo] = valor;
+        }
+    }
+
+    int pop() {
+        if (!vazia()) {
+            return elementos[topo--];
+        }
+        return -1;
+    }
+};
+
+
+struct No {
+    int valor;
+    No* prox;
+};
+
+class PilhaLista {
+private:
+    No* topo;
+
+public:
+    PilhaLista() {
+        topo = NULL;
+    }
+
+    bool vazia() {
+        return topo == NULL;
+    }
+
+    void push(int valor) {
+        No* novo = new No;
+
+        novo->valor = valor;
+        novo->prox = topo;
+
+        topo = novo;
+    }
+
+    int pop() {
+        if (!vazia()) {
+            No* aux = topo;
+
+            int valor = aux->valor;
+
+            topo = topo->prox;
+
+            delete aux;
+
+            return valor;
+        }
+
+        return -1;
+    }
+};
+
+
+int main() {
+
+    PilhaVetor paresVetor, imparesVetor;
+    PilhaLista paresLista, imparesLista;
+
+    int numero;
+    int anterior = -999999;
+
+    cout << "Digite 30 numeros inteiros em ordem crescente:\n";
+
+    for (int i = 0; i < TAM; i++) {
+        do {
+            cout << "Numero " << i + 1 << ": ";
+            cin >> numero;
+
+            if (numero <= anterior) {
+                cout << "Erro! O numero deve ser maior que o anterior.\n";
+            }
+        } while (numero <= anterior);
+        
+        anterior = numero;
+        
+        if (numero % 2 == 0) {
+            // Pilha vetor
+            paresVetor.push(numero);
+            // Pilha lista
+            paresLista.push(numero);
+        } else {
+            // Pilha vetor
+            imparesVetor.push(numero);
+            // Pilha lista
+            imparesLista.push(numero);
+        }
+    }
+
+    cout << "\n========== PILHA VETOR ==========\n";
+    cout << "\nPares (ordem decrescente):\n";
+    while (!paresVetor.vazia()) {
+        cout << paresVetor.pop() << " ";
+    }
+    cout << "\n\nImpares (ordem decrescente):\n";
+    while (!imparesVetor.vazia()) {
+        cout << imparesVetor.pop() << " ";
+    }
+    cout << "\n\n========== PILHA LISTA ENCADEADA ==========\n";
+    cout << "\nPares (ordem decrescente):\n";
+    while (!paresLista.vazia()) {
+        cout << paresLista.pop() << " ";
+    }
+    cout << "\n\nImpares (ordem decrescente):\n";
+    while (!imparesLista.vazia()) {
+        cout << imparesLista.pop() << " ";
+    }
+    cout << endl;
+
+    return 0;
+}
