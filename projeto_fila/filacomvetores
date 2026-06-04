@@ -1,0 +1,106 @@
+#include <iostream>
+
+using namespace std;
+
+const int TAM = 1000;
+
+struct Fila {
+    int dados[TAM];
+    int inicio;
+    int fim;
+};
+
+void inicializar(Fila &f) {
+    f.inicio = 0;
+    f.fim = 0;
+}
+
+bool vazia(Fila f) {
+    return f.inicio == f.fim;
+}
+
+bool cheia(Fila f) {
+    return f.fim == TAM;
+}
+
+void enfileirar(Fila &f, int valor) {
+    if (!cheia(f)) {
+        f.dados[f.fim] = valor;
+        f.fim++;
+    }
+}
+
+int desenfileirar(Fila &f) {
+    if (!vazia(f)) {
+        int valor = f.dados[f.inicio];
+        f.inicio++;
+        return valor;
+    }
+    return -1;
+}
+
+int tamanho(Fila f) {
+    return f.fim - f.inicio;
+}
+
+int main() {
+    Fila senhasGeradas;
+    Fila senhasAtendidas;
+
+    inicializar(senhasGeradas);
+    inicializar(senhasAtendidas);
+
+    int opcao;
+    int contadorSenha = 0;
+
+    do {
+        cout << "\n===== SISTEMA DE ATENDIMENTO =====\n";
+        cout << "Senhas aguardando: " << tamanho(senhasGeradas) << endl;
+        cout << "0 - Sair\n";
+        cout << "1 - Gerar senha\n";
+        cout << "2 - Realizar atendimento\n";
+        cout << "Opcao: ";
+        cin >> opcao;
+
+        switch(opcao) {
+
+            case 1:
+                contadorSenha++;
+                enfileirar(senhasGeradas, contadorSenha);
+
+                cout << "Senha gerada: "
+                     << contadorSenha << endl;
+                break;
+
+            case 2:
+                if (vazia(senhasGeradas)) {
+                    cout << "Nao ha senhas para atendimento.\n";
+                } else {
+                    int senha = desenfileirar(senhasGeradas);
+
+                    cout << "Atendendo senha: "
+                         << senha << endl;
+
+                    enfileirar(senhasAtendidas, senha);
+                }
+                break;
+
+            case 0:
+                if (!vazia(senhasGeradas)) {
+                    cout << "Ainda existem senhas aguardando atendimento!\n";
+                    opcao = -1;
+                }
+                break;
+
+            default:
+                cout << "Opcao invalida.\n";
+        }
+
+    } while(opcao != 0);
+
+    cout << "\nSistema encerrado.\n";
+    cout << "Quantidade de senhas atendidas: "
+         << tamanho(senhasAtendidas) << endl;
+
+    return 0;
+}
