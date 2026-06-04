@@ -1,0 +1,153 @@
+#include <iostream>
+
+using namespace std;
+
+struct No {
+    int senha;
+    No *prox;
+};
+
+struct Fila {
+    No *inicio;
+    No *fim;
+    int quantidade;
+};
+
+void inicializar(Fila &f) {
+    f.inicio = NULL;
+    f.fim = NULL;
+    f.quantidade = 0;
+}
+
+bool vazia(Fila f) {
+    return f.inicio == NULL;
+}
+
+void enfileirar(Fila &f, int valor) {
+
+    No *novo = new No;
+
+    novo->senha = valor;
+    novo->prox = NULL;
+
+    if (vazia(f)) {
+        f.inicio = novo;
+        f.fim = novo;
+    } else {
+        f.fim->prox = novo;
+        f.fim = novo;
+    }
+
+    f.quantidade++;
+}
+
+int desenfileirar(Fila &f) {
+
+    if (vazia(f))
+        return -1;
+
+    No *aux = f.inicio;
+    int valor = aux->senha;
+
+    f.inicio = aux->prox;
+
+    if (f.inicio == NULL)
+        f.fim = NULL;
+
+    delete aux;
+
+    f.quantidade--;
+
+    return valor;
+}
+
+int tamanho(Fila f) {
+    return f.quantidade;
+}
+
+int main() {
+
+    Fila senhasGeradas;
+    Fila senhasAtendidas;
+
+    inicializar(senhasGeradas);
+    inicializar(senhasAtendidas);
+
+    int opcao;
+    int contadorSenha = 0;
+
+    do {
+
+        cout << "\n===== SISTEMA DE ATENDIMENTO =====\n";
+        cout << "Senhas aguardando: "
+             << tamanho(senhasGeradas) << endl;
+
+        cout << "0 - Sair\n";
+        cout << "1 - Gerar senha\n";
+        cout << "2 - Realizar atendimento\n";
+        cout << "Opcao: ";
+        cin >> opcao;
+
+        switch(opcao) {
+
+            case 1:
+                contadorSenha++;
+
+                enfileirar(
+                    senhasGeradas,
+                    contadorSenha
+                );
+
+                cout << "Senha gerada: "
+                     << contadorSenha << endl;
+                break;
+
+            case 2:
+
+                if (vazia(senhasGeradas)) {
+
+                    cout << "Nao existem senhas aguardando atendimento.\n";
+
+                } else {
+
+                    int senha =
+                        desenfileirar(senhasGeradas);
+
+                    cout << "Atendendo senha: "
+                         << senha << endl;
+
+                    enfileirar(
+                        senhasAtendidas,
+                        senha
+                    );
+                }
+
+                break;
+
+            case 0:
+
+                if (!vazia(senhasGeradas)) {
+
+                    cout << "Nao e possivel encerrar.\n";
+                    cout << "Ainda existem "
+                         << tamanho(senhasGeradas)
+                         << " senhas aguardando atendimento.\n";
+
+                    opcao = -1;
+                }
+
+                break;
+
+            default:
+                cout << "Opcao invalida.\n";
+        }
+
+    } while(opcao != 0);
+
+    cout << "\nSistema encerrado.\n";
+    cout << "Quantidade de senhas atendidas: "
+         << tamanho(senhasAtendidas)
+         << endl;
+
+    return 0;
+}
