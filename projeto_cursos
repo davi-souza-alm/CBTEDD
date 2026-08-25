@@ -1,0 +1,190 @@
+using System;
+
+namespace ProjetoCursos
+{
+    public class Aluno
+    {
+        private int id;
+        private string nome;
+
+        public int Id { get { return id; } set { id = value; } }
+        public string Nome { get { return nome; } set { nome = value; } }
+
+        public Aluno(int id, string nome)
+        {
+            this.id = id;
+            this.nome = nome;
+        }
+
+        // Verifica se o aluno pode ser matriculado no curso (máx 6 disciplinas)
+        public bool PodeMatricular(Curso curso)
+        {
+            int totalDisciplinas = 0;
+            foreach (var disciplina in curso.Disciplinas)
+            {
+                if (disciplina != null)
+                {
+                    foreach (var aluno in disciplina.Alunos)
+                    {
+                        if (aluno != null && aluno.Id == this.Id)
+                        {
+                            totalDisciplinas++;
+                            break;
+                        }
+                    }
+                }
+            }
+            return totalDisciplinas < 6;
+        }
+    }
+
+    public class Disciplina
+    {
+        private int id;
+        private string descricao;
+        private Aluno[] alunos;
+
+        public int Id { get { return id; } set { id = value; } }
+        public string Descricao { get { return descricao; } set { descricao = value; } }
+        public Aluno[] Alunos { get { return alunos; } }
+
+        public Disciplina(int id, string descricao)
+        {
+            this.id = id;
+            this.descricao = descricao;
+            this.alunos = new Aluno[15]; // Máximo 15 alunos
+        }
+
+        public bool MatricularAluno(Aluno aluno)
+        {
+            for (int i = 0; i < alunos.Length; i++)
+            {
+                if (alunos[i] == null)
+                {
+                    alunos[i] = aluno;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public bool DesmatricularAluno(Aluno aluno)
+        {
+            for (int i = 0; i < alunos.Length; i++)
+            {
+                if (alunos[i] != null && alunos[i].Id == aluno.Id)
+                {
+                    alunos[i] = null;
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public class Curso
+    {
+        private int id;
+        private string descricao;
+        private Disciplina[] disciplinas;
+
+        public int Id { get { return id; } set { id = value; } }
+        public string Descricao { get { return descricao; } set { descricao = value; } }
+        public Disciplina[] Disciplinas { get { return disciplinas; } }
+
+        public Curso(int id, string descricao)
+        {
+            this.id = id;
+            this.descricao = descricao;
+            this.disciplinas = new Disciplina[12]; // Máximo 12 disciplinas
+        }
+
+        public bool AdicionarDisciplina(Disciplina disciplina)
+        {
+            for (int i = 0; i < disciplinas.Length; i++)
+            {
+                if (disciplinas[i] == null)
+                {
+                    disciplinas[i] = disciplina;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public Disciplina PesquisarDisciplina(Disciplina disciplina)
+        {
+            foreach (var d in disciplinas)
+            {
+                if (d != null && d.Id == disciplina.Id)
+                {
+                    return d;
+                }
+            }
+            return null;
+        }
+
+        public bool RemoverDisciplina(Disciplina disciplina)
+        {
+            for (int i = 0; i < disciplinas.Length; i++)
+            {
+                if (disciplinas[i] != null && disciplinas[i].Id == disciplina.Id)
+                {
+                    disciplinas[i] = null;
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+
+    public class Escola
+    {
+        private Curso[] cursos;
+
+        public Curso[] Cursos { get { return cursos; } }
+
+        public Escola()
+        {
+            this.cursos = new Curso[5]; // Máximo 5 cursos
+        }
+
+        public bool AdicionarCurso(Curso curso)
+        {
+            for (int i = 0; i < cursos.Length; i++)
+            {
+                if (cursos[i] == null)
+                {
+                    cursos[i] = curso;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public Curso PesquisarCurso(Curso curso)
+        {
+            foreach (var c in cursos)
+            {
+                if (c != null && c.Id == curso.Id)
+                {
+                    return c;
+                }
+            }
+            return null;
+        }
+
+        public bool RemoverCurso(Curso curso)
+        {
+            for (int i = 0; i < cursos.Length; i++)
+            {
+                if (cursos[i] != null && cursos[i].Id == curso.Id)
+                {
+                    cursos[i] = null;
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+}
