@@ -1,0 +1,155 @@
+using System;
+using System.Drawing;
+using System.Windows.Forms;
+
+namespace TeatroBilheteria
+{
+    public partial class Form1 : Form
+    {
+        // Matriz para controlar os estados das poltronas:
+        // 0 = Vaga, 1 = Ocupada (Inteira), 2 = Ocupada (Meia)
+        private int[,] poltronas = new int[15, 40];
+        
+        // Componentes criados dinamicamente
+        private Label lblFaturamento;
+        private Button btnFaturamento;
+
+        public Form1()
+        {
+            InitializeComponent();
+            ConfigurarFormulario();
+            CriarInterfaceDinamicamente();
+        }
+
+        private void ConfigurarFormulario()
+        {
+            this.Text = "N1 — Projeto Teatro — Bilheteria";
+            this.Size = new Size(1250, 600); // Tamanho adequado para caber 40 colunas
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.AutoScroll = true;
+        }
+
+        private void CriarInterfaceDinamicamente()
+        {
+            int larguraBotao = 25;
+            int alturaBotao = 25;
+            int margemX = 20;
+            int margemY = 20;
+            int espacamento = 3;
+
+            // 1. Criação do mapa de 600 poltronas (15 fileiras x 40 colunas)
+            for (int linha = 0; linha < 15; linha++)
+            {
+                for (int coluna = 0; coluna < 40; coluna++)
+                {
+                    Button btnPoltrona = new Button();
+                    btnPoltrona.Size = new Size(larguraBotao, alturaBotao);
+                    btnPoltrona.Location = new Point(margemX + (coluna * (larguraBotao + espacamento)), 
+                                                     margemY + (linha * (alturaBotao + espacamento)));
+                    
+                    btnPoltrona.BackColor = Color.LightGreen; // Cor inicial (Vaga)
+                    btnPoltrona.FlatStyle = FlatStyle.Flat;
+                    
+                    // Armazena a coordenada (linha, coluna) dentro da propriedade Tag do botão
+                    btnPoltrona.Tag = new Point(linha, coluna);
+                    
+                    // Vincula o evento de clique
+                    btnPoltrona.Click += Poltrona_Click;
+
+                    this.Controls.Add(btnPoltrona);
+                }
+            }
+
+            // Posição Y logo abaixo do grid de poltronas
+            int posicaoYControles = margemY + (15 * (alturaBotao + espacamento)) + 20;
+
+            // 2. Criação do Botão de Faturamento
+            btnFaturamento = new Button();
+            btnFaturamento.Text = "Calcular Faturamento";
+            btnFaturamento.Size = new Size(150, 40);
+            btnFaturamento.Location = new Point(margemX, posicaoYControles);
+            btnFaturamento.Click += BtnFaturamento_Click;
+            this.Controls.Add(btnFaturamento);
+
+            // 3. Criação da Label de Faturamento
+            lblFaturamento = new Label();
+            lblFaturamento.Text = "Qtde de lugares ocupados: 0\nValor da bilheteria: R$ 0,00";
+            lblFaturamento.AutoSize = true;
+            lblFaturamento.Font = new Font("Segoe UI", 12, FontStyle.Bold);
+            lblFaturamento.Location = new Point(margemX + 170, posicaoYControles);
+            this.Controls.Add(lblFaturamento);
+        }
+
+        private void Poltrona_Click(object sender, EventArgs e)
+        {
+            Button btnClicado = sender as Button;
+            Point coordenadas = (Point)btnClicado.Tag;
+            int linha = coordenadas.X;
+            int coluna = coordenadas.Y;
+
+            // Valida se a poltrona já está ocupada
+            if (poltronas[linha, coluna] != 0)
+            {
+                MessageBox.Show("Esta poltrona já se encontra ocupada!", "Aviso", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                return;
+            }
+
+            // Se estiver vaga, pergunta o tipo de entrada
+            DialogResult resposta = MessageBox.Show(
+                "Deseja reservar com Meia-entrada?\n\n[Sim] - Meia-entrada\n[Não] - Inteira\n[Cancelar] - Cancelar Reserva",
+                "Tipo de Ingresso",
+                MessageBoxButtons.YesNoCancel,
+                MessageBoxIcon.Question);
+
+            if (resposta == DialogResult.Yes) // Meia-entrada
+            {
+                poltronas[linha, coluna] = 2; // Estado 2 = Meia
+                btnClicado.BackColor = Color.Gold;
+            }
+            else if (resposta == DialogResult.No) // Inteira
+            {
+                poltronas[linha, coluna] = 1; // Estado 1 = Inteira
+                btnClicado.BackColor = Color.Tomato;
+            }
+            // Se for Cancel, não faz nada
+        }
+
+        private void BtnFaturamento_Click(object sender, EventArgs e)
+        {
+            int qtdOcupados = 0;
+            double valorTotal = 0;
+
+            for (int linha = 0; linha < 15; linha++)
+            {
+                for (int coluna = 0; coluna < 40; coluna++)
+                {
+                    int estadoPoltrona = poltronas[linha, coluna];
+
+                    // Se não estiver vaga
+                    if (estadoPoltrona != 0) 
+                    {
+                        qtdOcupados++;
+                        double precoBaseFileira = 0;
+
+                        // Verifica a precificação baseada na fileira (índices 0 a 14)
+                        if (linha >= 0 && linha <= 4)        // Fileiras 1 a 5
+                            precoBaseFileira = 50.00;
+                        else if (linha >= 5 && linha <= 9)   // Fileiras 6 a 10
+                            precoBaseFileira = 30.00;
+                        else if (linha >= 10 && linha <= 14) // Fileiras 11 a 15
+                            precoBaseFileira = 15.00;
+
+                        // Adiciona ao total considerando se é meia ou inteira
+                        if (estadoPoltrona == 1) // Inteira
+                            valorTotal += precoBaseFileira;
+                        else if (estadoPoltrona == 2) // Meia (50% do valor)
+                            valorTotal += (precoBaseFileira / 2.0);
+                    }
+                }
+            }
+
+            // Atualiza a Label com a formatação exigida
+            lblFaturamento.Text = $"Qtde de lugares ocupados: {qtdOcupados:D3}\nValor da bilheteria: R$ {valorTotal:F2}";
+        }
+    }
+}
