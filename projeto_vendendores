@@ -1,0 +1,256 @@
+using System;
+
+namespace ProjetoVendedores
+{
+    class Venda
+    {
+        private int qtde;
+        private double valor;
+
+        public int Qtde { get => qtde; set => qtde = value; }
+        public double Valor { get => valor; set => valor = value; }
+
+        public Venda(int qtde, double valor)
+        {
+            this.qtde = qtde;
+            this.valor = valor;
+        }
+
+        public double valorMedio()
+        {
+            if (qtde == 0) return 0;
+            return valor / qtde;
+        }
+    }
+
+    class Vendedor
+    {
+        private int id;
+        private string nome;
+        private double percComissao;
+        private Venda[] asVendas;
+
+        public int Id { get => id; set => id = value; }
+        public string Nome { get => nome; set => nome = value; }
+        public double PercComissao { get => percComissao; set => percComissao = value; }
+        public Venda[] AsVendas { get => asVendas; }
+
+        public Vendedor(int id, string nome, double percComissao)
+        {
+            this.id = id;
+            this.nome = nome;
+            this.percComissao = percComissao;
+            this.asVendas = new Venda[31]; // Até 31 dias no mês
+        }
+
+        public void registrarVenda(int dia, Venda venda)
+        {
+            asVendas[dia - 1] = venda;
+        }
+
+        public double valorVendas()
+        {
+            double total = 0;
+            for (int i = 0; i < 31; i++)
+            {
+                if (asVendas[i] != null)
+                    total += asVendas[i].Valor;
+            }
+            return total;
+        }
+
+        public double valorComissao()
+        {
+            return valorVendas() * (percComissao / 100.0);
+        }
+    }
+
+    class Vendedores
+    {
+        private Vendedor[] osVendedores;
+        private int max;
+        private int qtde;
+
+        public int Qtde { get => qtde; }
+        public Vendedor[] OsVendedores { get => osVendedores; }
+
+        public Vendedores(int max)
+        {
+            this.max = max;
+            this.osVendedores = new Vendedor[max];
+            this.qtde = 0;
+        }
+
+        public bool addVendedor(Vendedor v)
+        {
+            if (qtde < max)
+            {
+                osVendedores[qtde] = v;
+                qtde++;
+                return true;
+            }
+            return false;
+        }
+
+        public Vendedor searchVendedor(Vendedor v)
+        {
+            for (int i = 0; i < qtde; i++)
+            {
+                if (osVendedores[i].Id == v.Id)
+                    return osVendedores[i];
+            }
+            return null;
+        }
+
+        public bool delVendedor(Vendedor v)
+        {
+            Vendedor encontrado = searchVendedor(v);
+            if (encontrado != null && encontrado.valorVendas() == 0)
+            {
+                int index = Array.IndexOf(osVendedores, encontrado);
+                // Move os próximos elementos para não deixar buraco no array
+                for (int i = index; i < qtde - 1; i++)
+                {
+                    osVendedores[i] = osVendedores[i + 1];
+                }
+                osVendedores[qtde - 1] = null;
+                qtde--;
+                return true;
+            }
+            return false;
+        }
+
+        public double valorVendas()
+        {
+            double total = 0;
+            for (int i = 0; i < qtde; i++)
+            {
+                total += osVendedores[i].valorVendas();
+            }
+            return total;
+        }
+
+        public double valorComissao()
+        {
+            double total = 0;
+            for (int i = 0; i < qtde; i++)
+            {
+                total += osVendedores[i].valorComissao();
+            }
+            return total;
+        }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            Vendedores gerenciador = new Vendedores(10);
+            int opcao;
+
+            do
+            {
+                Console.Clear();
+                Console.WriteLine("=== MENU ===");
+                Console.WriteLine("0. Sair");
+                Console.WriteLine("1. Cadastrar vendedor");
+                Console.WriteLine("2. Consultar vendedor");
+                Console.WriteLine("3. Excluir vendedor");
+                Console.WriteLine("4. Registrar venda");
+                Console.WriteLine("5. Listar vendedores");
+                Console.Write("\nEscolha uma opção: ");
+                
+                if (!int.TryParse(Console.ReadLine(), out opcao)) continue;
+
+                switch (opcao)
+                {
+                    case 1:
+                        if (gerenciador.Qtde >= 10)
+                        {
+                            Console.WriteLine("Limite máximo de vendedores atingido.");
+                            break;
+                        }
+                        Console.Write("ID do Vendedor: ");
+                        int id = int.Parse(Console.ReadLine());
+                        Console.Write("Nome do Vendedor: ");
+                        string nome = Console.ReadLine();
+                        Console.Write("Percentual de Comissão (%): ");
+                        double perc = double.Parse(Console.ReadLine());
+                        
+                        gerenciador.addVendedor(new Vendedor(id, nome, perc));
+                        Console.WriteLine("Cadastrado com sucesso!");
+                        break;
+
+                    case 2:
+                        Console.Write("ID do Vendedor para consulta: ");
+                        int idConsulta = int.Parse(Console.ReadLine());
+                        Vendedor vCons = gerenciador.searchVendedor(new Vendedor(idConsulta, "", 0));
+                        
+                        if (vCons != null)
+                        {
+                            Console.WriteLine($"\nID: {vCons.Id} | Nome: {vCons.Nome}");
+                            Console.WriteLine($"Total Vendas: R$ {vCons.valorVendas():F2}");
+                            Console.WriteLine($"Comissão Devida: R$ {vCons.valorComissao():F2}");
+                            for(int i=0; i<31; i++)
+                            {
+                                if (vCons.AsVendas[i] != null)
+                                    Console.WriteLine($"Dia {i + 1}: Valor Médio das vendas = R$ {vCons.AsVendas[i].valorMedio():F2}");
+                            }
+                        }
+                        else Console.WriteLine("Vendedor não encontrado.");
+                        break;
+
+                    case 3:
+                        Console.Write("ID do Vendedor para exclusão: ");
+                        int idDel = int.Parse(Console.ReadLine());
+                        Vendedor vDel = new Vendedor(idDel, "", 0);
+                        
+                        if (gerenciador.delVendedor(vDel))
+                            Console.WriteLine("Excluído com sucesso!");
+                        else
+                            Console.WriteLine("Erro na exclusão. Verifique se o vendedor existe e se ele NÃO possui vendas registradas.");
+                        break;
+
+                    case 4:
+                        Console.Write("ID do Vendedor: ");
+                        int idVenda = int.Parse(Console.ReadLine());
+                        Vendedor vVenda = gerenciador.searchVendedor(new Vendedor(idVenda, "", 0));
+                        
+                        if (vVenda != null)
+                        {
+                            Console.Write("Dia do mês (1-31): ");
+                            int dia = int.Parse(Console.ReadLine());
+                            Console.Write("Quantidade de itens vendidos: ");
+                            int qtdeVenda = int.Parse(Console.ReadLine());
+                            Console.Write("Valor total das vendas do dia (R$): ");
+                            double valorVenda = double.Parse(Console.ReadLine());
+
+                            vVenda.registrarVenda(dia, new Venda(qtdeVenda, valorVenda));
+                            Console.WriteLine("Venda registrada!");
+                        }
+                        else Console.WriteLine("Vendedor não encontrado.");
+                        break;
+
+                    case 5:
+                        Console.WriteLine("\n--- Lista de Vendedores ---");
+                        for (int i = 0; i < gerenciador.Qtde; i++)
+                        {
+                            Vendedor v = gerenciador.OsVendedores[i];
+                            Console.WriteLine($"ID: {v.Id} | Nome: {v.Nome} | Total Vendas: R$ {v.valorVendas():F2} | Comissão: R$ {v.valorComissao():F2}");
+                        }
+                        Console.WriteLine("---------------------------");
+                        Console.WriteLine($"TOTAL GERAL DE VENDAS: R$ {gerenciador.valorVendas():F2}");
+                        Console.WriteLine($"TOTAL GERAL DE COMISSÕES: R$ {gerenciador.valorComissao():F2}");
+                        break;
+                }
+                
+                if (opcao != 0)
+                {
+                    Console.WriteLine("\nPressione qualquer tecla para continuar...");
+                    Console.ReadKey();
+                }
+
+            } while (opcao != 0);
+        }
+    }
+}
