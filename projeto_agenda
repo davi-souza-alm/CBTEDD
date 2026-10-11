@@ -1,0 +1,130 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Data
+{
+    public int Dia { get; }
+    public int Mes { get; }
+    public int Ano { get; }
+    public Data(int dia, int mes, int ano)
+    {
+        var d = new DateTime(ano, mes, dia);
+        Dia = d.Day; Mes = d.Month; Ano = d.Year;
+    }
+    public override string ToString() => $"{Dia:00}/{Mes:00}/{Ano:0000}";
+}
+
+class Telefone
+{
+    public string Tipo { get; set; }
+    public string Numero { get; set; }
+    public bool Principal { get; set; }
+    public Telefone(string tipo, string numero, bool principal = false)
+    { Tipo = tipo; Numero = numero; Principal = principal; }
+    public override string ToString() => $"{Tipo}: {Numero}{(Principal ? " (principal)" : "")}";
+}
+
+class Contato : IEquatable<Contato>
+{
+    public string Email { get; set; }
+    public string Nome { get; set; }
+    public Data DataNascimento { get; set; }
+    public List<Telefone> Telefones { get; } = new();
+    public Contato(string email, string nome, Data nascimento)
+    { Email = email; Nome = nome; DataNascimento = nascimento; }
+    public int GetIdade()
+    {
+        var hoje = DateTime.Today;
+        int idade = hoje.Year - DataNascimento.Ano;
+        if (new DateTime(hoje.Year, DataNascimento.Mes, DataNascimento.Dia) > hoje) idade--;
+        return idade;
+    }
+    public void AdicionarTelefone(Telefone telefone)
+    {
+        if (telefone.Principal) Telefones.ForEach(t => t.Principal = false);
+        Telefones.Add(telefone);
+        if (Telefones.Count == 1) telefone.Principal = true;
+    }
+    public string GetTelefonePrincipal() => Telefones.FirstOrDefault(t => t.Principal)?.Numero
+        ?? Telefones.FirstOrDefault()?.Numero ?? "(sem telefone)";
+    public override string ToString() =>
+        $"{Nome} | {Email} | Nascimento: {DataNascimento} | Idade: {GetIdade()} | Telefone principal: {GetTelefonePrincipal()}";
+    public bool Equals(Contato? other) => other != null && Email.Equals(other.Email, StringComparison.OrdinalIgnoreCase);
+    public override bool Equals(object? obj) => obj is Contato c && Equals(c);
+    public override int GetHashCode() => Email.ToLowerInvariant().GetHashCode();
+}
+
+class Contatos
+{
+    private readonly List<Contato> agenda = new();
+    public bool Adicionar(Contato c)
+    {
+        if (agenda.Contains(c)) return false;
+        agenda.Add(c); return true;
+    }
+    public Contato? Pesquisar(string email) => agenda.FirstOrDefault(c => c.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+    public bool Alterar(Contato c)
+    {
+        int i = agenda.FindIndex(x => x.Email.Equals(c.Email, StringComparison.OrdinalIgnoreCase));
+        if (i < 0) return false; agenda[i] = c; return true;
+    }
+    public bool Remover(string email)
+    {
+        var c = Pesquisar(email); return c != null && agenda.Remove(c);
+    }
+    public IReadOnlyList<Contato> Listar() => agenda.AsReadOnly();
+}
+
+class Program
+{
+    static string Ler(string texto) { Console.Write(texto); return Console.ReadLine() ?? ""; }
+    static int LerInt(string texto) => int.TryParse(Ler(texto), out int n) ? n : -1;
+    static Contato CriarContato(string? emailExistente = null)
+    {
+        string nome = Ler("Nome: ");
+        string email = emailExistente ?? Ler("E-mail: ");
+        int dia = LerInt("Dia de nascimento: "), mes = LerInt("Mês: "), ano = LerInt("Ano: ");
+        var c = new Contato(email, nome, new Data(dia, mes, ano));
+        string resp;
+        do {
+            string tipo = Ler("Tipo de telefone (celular, casa, trabalho): ");
+            string numero = Ler("Número: ");
+            bool principal = Ler("É principal? (s/n): ").Trim().ToLower() == "s";
+            c.AdicionarTelefone(new Telefone(tipo, numero, principal));
+            resp = Ler("Adicionar outro telefone? (s/n): ").Trim().ToLower();
+        } while (resp == "s");
+        return c;
+    }
+    static void Main()
+    {
+        var agenda = new Contatos(); bool sair = false;
+        while (!sair)
+        {
+            Console.WriteLine("\n=== AGENDA ===\n0 Sair\n1 Adicionar contato\n2 Pesquisar contato\n3 Alterar contato\n4 Remover contato\n5 Listar contatos");
+            switch (LerInt("Opção: "))
+            {
+                case 0: sair = true; break;
+                case 1:
+                    try { Console.WriteLine(agenda.Adicionar(CriarContato()) ? "Contato adicionado." : "Já existe contato com esse e-mail."); }
+                    catch { Console.WriteLine("Data inválida."); }
+                    break;
+                case 2:
+                    var c = agenda.Pesquisar(Ler("E-mail: "));
+                    Console.WriteLine(c == null ? "Contato não encontrado." : c + "\n" + string.Join("\n", c.Telefones));
+                    break;
+                case 3:
+                    string email = Ler("E-mail do contato que será alterado: ");
+                    if (agenda.Pesquisar(email) == null) Console.WriteLine("Contato não encontrado.");
+                    else try { Console.WriteLine(agenda.Alterar(CriarContato(email)) ? "Contato alterado." : "Não foi possível alterar."); }
+                         catch { Console.WriteLine("Data inválida."); }
+                    break;
+                case 4: Console.WriteLine(agenda.Remover(Ler("E-mail: ")) ? "Contato removido." : "Contato não encontrado."); break;
+                case 5:
+                    foreach (var item in agenda.Listar()) Console.WriteLine(item + "\n" + string.Join("\n", item.Telefones));
+                    break;
+                default: Console.WriteLine("Opção inválida."); break;
+            }
+        }
+    }
+}
