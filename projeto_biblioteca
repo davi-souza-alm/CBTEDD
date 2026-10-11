@@ -1,0 +1,100 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Livro
+{
+    public int Id { get; set; }
+    public string Titulo { get; set; } = "";
+    public string Autor { get; set; } = "";
+    public string Editora { get; set; } = "";
+    public List<string> Exemplares { get; } = new();
+    public void AdicionarExemplar(string codigo) { Exemplares.Add(codigo); }
+    public int GetExemplares() => Exemplares.Count;
+    public int GetDisponiveis() => Exemplares.Count(e => !Biblioteca.Emprestimos.Any(x => x.CodigoExemplar == e && x.DataDevolucao == null));
+    public int GetEmprestados() => GetExemplares() - GetDisponiveis();
+    public double PercentualUtilizacao() => GetExemplares() == 0 ? 0 : GetEmprestados() * 100.0 / GetExemplares();
+    public override string ToString() => $"#{Id} {Titulo} — {Autor} | {Editora} | Exemplares: {GetExemplares()} | Disponíveis: {GetDisponiveis()} | Utilização: {PercentualUtilizacao():F1}%";
+}
+class Exemplar
+{
+    public string Codigo { get; set; } = "";
+    public override string ToString() => Codigo;
+}
+class Emprestimo
+{
+    public string CodigoExemplar { get; set; } = "";
+    public DateTime DataEmprestimo { get; set; }
+    public DateTime? DataDevolucao { get; set; }
+}
+class Biblioteca
+{
+    private readonly List<Livro> livros = new();
+    public static List<Emprestimo> Emprestimos { get; } = new();
+    private int proximoId = 1;
+    public void Adicionar(Livro livro) { livro.Id = proximoId++; livros.Add(livro); }
+    public Livro? Pesquisar(int id) => livros.FirstOrDefault(l => l.Id == id);
+    public IReadOnlyList<Livro> Listar() => livros.AsReadOnly();
+    public bool AdicionarExemplar(int id, string codigo)
+    {
+        var livro = Pesquisar(id);
+        if (livro == null || livros.SelectMany(l => l.Exemplares).Contains(codigo)) return false;
+        livro.AdicionarExemplar(codigo); return true;
+    }
+    public bool RegistrarEmprestimo(string codigo)
+    {
+        var livro = livros.FirstOrDefault(l => l.Exemplares.Contains(codigo));
+        if (livro == null || livro.GetDisponiveis() <= 0 || Emprestimos.Any(e => e.CodigoExemplar == codigo && e.DataDevolucao == null)) return false;
+        Emprestimos.Add(new Emprestimo { CodigoExemplar = codigo, DataEmprestimo = DateTime.Today }); return true;
+    }
+    public bool RegistrarDevolucao(string codigo)
+    {
+        var emp = Emprestimos.LastOrDefault(e => e.CodigoExemplar == codigo && e.DataDevolucao == null);
+        if (emp == null) return false;
+        emp.DataDevolucao = DateTime.Today; return true;
+    }
+}
+class Program
+{
+    static string Ler(string s) { Console.Write(s); return Console.ReadLine() ?? ""; }
+    static int LerInt(string s) => int.TryParse(Ler(s), out int n) ? n : -1;
+    static void Main()
+    {
+        var b = new Biblioteca(); bool sair = false;
+        while (!sair)
+        {
+            Console.WriteLine("\n=== BIBLIOTECA ===\n0 Sair\n1 Adicionar livro\n2 Pesquisar livro (identificador)\n3 Pesquisar livro (palavra-chave)\n4 Adicionar exemplar\n5 Registrar empréstimo\n6 Registrar devolução");
+            switch (LerInt("Opção: "))
+            {
+                case 0: sair = true; break;
+                case 1:
+                    var l = new Livro { Titulo = Ler("Título: "), Autor = Ler("Autor: "), Editora = Ler("Editora: ") };
+                    b.Adicionar(l);
+                    int qtd = LerInt("Quantidade de exemplares iniciais: ");
+                    for (int i = 0; i < Math.Max(0, qtd); i++) b.AdicionarExemplar(l.Id, Ler($"Código do exemplar {i + 1}: "));
+                    Console.WriteLine($"Livro cadastrado com ID {l.Id}."); break;
+                case 2:
+                    l = b.Pesquisar(LerInt("ID do livro: "));
+                    Console.WriteLine(l == null ? "Livro não encontrado." : l); break;
+                case 3:
+                    string termo = Ler("Palavra-chave do título/autor: ");
+                    var encontrados = b.Listar().Where(x => x.Titulo.Contains(termo, StringComparison.OrdinalIgnoreCase) || x.Autor.Contains(termo, StringComparison.OrdinalIgnoreCase)).ToList();
+                    if (encontrados.Count == 0) Console.WriteLine("Nenhum livro encontrado.");
+                    foreach (var x in encontrados) Console.WriteLine(x); break;
+                case 4:
+                    Console.WriteLine(b.AdicionarExemplar(LerInt("ID do livro: "), Ler("Código do novo exemplar: ")) ? "Exemplar adicionado." : "Livro inexistente ou código já utilizado."); break;
+                case 5:
+                    Console.WriteLine(b.RegistrarEmprestimo(Ler("Código do exemplar: ")) ? "Empréstimo registrado." : "Exemplar inexistente ou indisponível."); break;
+                case 6:
+                    Console.WriteLine(b.RegistrarDevolucao(Ler("Código do exemplar: ")) ? "Devolução registrada." : "Não há empréstimo ativo para esse exemplar."); break;
+                default: Console.WriteLine("Opção inválida."); break;
+            }
+            if (!sair)
+            {
+                Console.WriteLine("\n--- Acervo ---");
+                foreach (var livro in b.Listar()) Console.WriteLine(livro);
+                Console.WriteLine($"Empréstimos ativos: {Biblioteca.Emprestimos.Count(e => e.DataDevolucao == null)}");
+            }
+        }
+    }
+}
