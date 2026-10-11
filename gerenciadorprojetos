@@ -1,0 +1,137 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+enum StatusProjeto { Planejado, EmAndamento, Concluido, Cancelado }
+enum Prioridade { Baixa, Media, Alta, Urgente }
+
+class Tarefa
+{
+    public int Id { get; set; }
+    public string Titulo { get; set; } = "";
+    public string Descricao { get; set; } = "";
+    public string Responsavel { get; set; } = "";
+    public DateTime Prazo { get; set; }
+    public StatusProjeto Status { get; set; } = StatusProjeto.Planejado;
+    public Prioridade Prioridade { get; set; } = Prioridade.Media;
+    public override string ToString() => $"Tarefa #{Id}: {Titulo} | Responsável: {Responsavel} | Prazo: {Prazo:dd/MM/yyyy} | Status: {Status} | Prioridade: {Prioridade}";
+}
+class Projeto
+{
+    public int Id { get; set; }
+    public string Nome { get; set; } = "";
+    public string Descricao { get; set; } = "";
+    public DateTime DataInicio { get; set; } = DateTime.Today;
+    public DateTime DataFim { get; set; } = DateTime.Today.AddDays(30);
+    public List<Tarefa> Tarefas { get; } = new();
+    public override string ToString() => $"Projeto #{Id}: {Nome} | {StatusGeral()} | Tarefas: {Tarefas.Count} ({Tarefas.Count(t => t.Status == StatusProjeto.Concluido)} concluídas)";
+    public string StatusGeral()
+    {
+        if (Tarefas.Count > 0 && Tarefas.All(t => t.Status == StatusProjeto.Concluido)) return "Concluído";
+        if (Tarefas.Any(t => t.Status == StatusProjeto.EmAndamento || t.Status == StatusProjeto.Concluido)) return "Em andamento";
+        return "Planejado";
+    }
+}
+class Gerenciador
+{
+    private readonly List<Projeto> projetos = new();
+    private int proximoProjeto = 1, proximaTarefa = 1;
+    public IReadOnlyList<Projeto> Projetos => projetos.AsReadOnly();
+    public Projeto AdicionarProjeto(string nome, string descricao, DateTime inicio, DateTime fim)
+    {
+        var p = new Projeto { Id = proximoProjeto++, Nome = nome, Descricao = descricao, DataInicio = inicio, DataFim = fim };
+        projetos.Add(p); return p;
+    }
+    public Projeto? BuscarProjeto(int id) => projetos.FirstOrDefault(p => p.Id == id);
+    public bool RemoverProjeto(int id) { var p = BuscarProjeto(id); return p != null && projetos.Remove(p); }
+    public Tarefa? AdicionarTarefa(int idProjeto, string titulo, string descricao, string responsavel, DateTime prazo, Prioridade prioridade)
+    {
+        var p = BuscarProjeto(idProjeto); if (p == null) return null;
+        var t = new Tarefa { Id = proximaTarefa++, Titulo = titulo, Descricao = descricao, Responsavel = responsavel, Prazo = prazo, Prioridade = prioridade };
+        p.Tarefas.Add(t); return t;
+    }
+    public Tarefa? BuscarTarefa(int idTarefa) => projetos.SelectMany(p => p.Tarefas).FirstOrDefault(t => t.Id == idTarefa);
+    public bool AlterarStatusTarefa(int idTarefa, StatusProjeto status)
+    {
+        var t = BuscarTarefa(idTarefa); if (t == null) return false; t.Status = status; return true;
+    }
+    public bool RemoverTarefa(int idTarefa)
+    {
+        foreach (var p in projetos) { var t = p.Tarefas.FirstOrDefault(x => x.Id == idTarefa); if (t != null) return p.Tarefas.Remove(t); }
+        return false;
+    }
+}
+class Program
+{
+    static string Ler(string s) { Console.Write(s); return Console.ReadLine() ?? ""; }
+    static int LerInt(string s) => int.TryParse(Ler(s), out int n) ? n : -1;
+    static DateTime LerData(string s) => DateTime.TryParse(Ler(s), out var d) ? d : DateTime.Today;
+    static T EnumLer<T>(string s) where T : struct, Enum
+    {
+        Console.WriteLine(s);
+        var valores = Enum.GetValues<T>();
+        for (int i = 0; i < valores.Length; i++) Console.WriteLine($"{i} - {valores[i]}");
+        int n = LerInt("Escolha: ");
+        return n >= 0 && n < valores.Length ? valores[n] : valores[0];
+    }
+    static void Main()
+    {
+        var g = new Gerenciador(); bool sair = false;
+        while (!sair)
+        {
+            Console.WriteLine("\n=== GERENCIADOR DE PROJETOS ===\n0 Sair\n1 Adicionar projeto\n2 Pesquisar projeto (identificador/nome)\n3 Remover projeto\n4 Adicionar tarefa ao projeto\n5 Consultar tarefa\n6 Concluir tarefa\n7 Editar tarefa\n8 Listar tarefas de um projeto\n9 Filtrar tarefas por status\n10 Filtrar tarefas por prioridade\n11 Resumo geral dos projetos");
+            switch (LerInt("Opção: "))
+            {
+                case 0: sair = true; break;
+                case 1:
+                    string nome = Ler("Nome do projeto: "), desc = Ler("Descrição: ");
+                    var p = g.AdicionarProjeto(nome, desc, LerData("Data de início (dd/mm/aaaa): "), LerData("Data de fim (dd/mm/aaaa): "));
+                    Console.WriteLine($"Projeto criado com ID {p.Id}."); break;
+                case 2:
+                    string busca = Ler("Digite o ID ou parte do nome: ");
+                    var ps = g.Projetos.Where(x => x.Id.ToString() == busca || x.Nome.Contains(busca, StringComparison.OrdinalIgnoreCase)).ToList();
+                    foreach (var x in ps) Console.WriteLine(x);
+                    if (ps.Count == 0) Console.WriteLine("Projeto não encontrado."); break;
+                case 3:
+                    Console.WriteLine(g.RemoverProjeto(LerInt("ID do projeto: ")) ? "Projeto removido." : "Projeto não encontrado."); break;
+                case 4:
+                    int id = LerInt("ID do projeto: ");
+                    var tarefa = g.AdicionarTarefa(id, Ler("Título da tarefa: "), Ler("Descrição: "), Ler("Responsável: "),
+                        LerData("Prazo (dd/mm/aaaa): "), EnumLer<Prioridade>("Prioridade"));
+                    Console.WriteLine(tarefa == null ? "Projeto não encontrado." : $"Tarefa criada com ID {tarefa.Id}."); break;
+                case 5:
+                    tarefa = g.BuscarTarefa(LerInt("ID da tarefa: "));
+                    Console.WriteLine(tarefa == null ? "Tarefa não encontrada." : tarefa); break;
+                case 6:
+                    Console.WriteLine(g.AlterarStatusTarefa(LerInt("ID da tarefa: "), StatusProjeto.Concluido) ? "Tarefa concluída." : "Tarefa não encontrada."); break;
+                case 7:
+                    int idT = LerInt("ID da tarefa: ");
+                    tarefa = g.BuscarTarefa(idT);
+                    if (tarefa == null) { Console.WriteLine("Tarefa não encontrada."); break; }
+                    tarefa.Titulo = Ler("Novo título: "); tarefa.Descricao = Ler("Nova descrição: ");
+                    tarefa.Responsavel = Ler("Novo responsável: "); tarefa.Prazo = LerData("Novo prazo: ");
+                    tarefa.Prioridade = EnumLer<Prioridade>("Nova prioridade");
+                    tarefa.Status = EnumLer<StatusProjeto>("Novo status"); Console.WriteLine("Tarefa alterada."); break;
+                case 8:
+                    p = g.BuscarProjeto(LerInt("ID do projeto: "));
+                    if (p == null) Console.WriteLine("Projeto não encontrado.");
+                    else { Console.WriteLine(p); foreach (var t in p.Tarefas) Console.WriteLine(t); } break;
+                case 9:
+                    var status = EnumLer<StatusProjeto>("Filtrar por status");
+                    var porStatus = g.Projetos.SelectMany(x => x.Tarefas).Where(t => t.Status == status).ToList();
+                    foreach (var t in porStatus) Console.WriteLine(t);
+                    if (porStatus.Count == 0) Console.WriteLine("Nenhuma tarefa encontrada."); break;
+                case 10:
+                    var prioridade = EnumLer<Prioridade>("Filtrar por prioridade");
+                    var porPrioridade = g.Projetos.SelectMany(x => x.Tarefas).Where(t => t.Prioridade == prioridade).ToList();
+                    foreach (var t in porPrioridade) Console.WriteLine(t);
+                    if (porPrioridade.Count == 0) Console.WriteLine("Nenhuma tarefa encontrada."); break;
+                case 11:
+                    Console.WriteLine($"Projetos cadastrados: {g.Projetos.Count}");
+                    foreach (var x in g.Projetos) Console.WriteLine(x);
+                    Console.WriteLine($"Total de tarefas: {g.Projetos.Sum(x => x.Tarefas.Count)}"); break;
+                default: Console.WriteLine("Opção inválida."); break;
+            }
+        }
+    }
+}
