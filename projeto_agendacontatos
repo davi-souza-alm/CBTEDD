@@ -1,0 +1,144 @@
+using System;
+using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
+using System.Windows.Forms;
+
+namespace AgendaWindowsForms
+{
+    public class DataNascimento
+    {
+        public int Dia { get; }
+        public int Mes { get; }
+        public int Ano { get; }
+        public DataNascimento(DateTime data) { Dia = data.Day; Mes = data.Month; Ano = data.Year; }
+        public override string ToString() => $"{Dia:00}/{Mes:00}/{Ano:0000}";
+    }
+    public class Telefone
+    {
+        public string Tipo { get; set; } = "";
+        public string Numero { get; set; } = "";
+        public bool Principal { get; set; }
+        public override string ToString() => $"{Tipo}: {Numero}{(Principal ? " (principal)" : "")}";
+    }
+    public class Contato
+    {
+        public string Email { get; set; } = "";
+        public string Nome { get; set; } = "";
+        public DataNascimento Nascimento { get; set; } = new(DateTime.Today);
+        public List<Telefone> Telefones { get; } = new();
+        public int GetIdade()
+        {
+            var hoje = DateTime.Today;
+            int idade = hoje.Year - Nascimento.Ano;
+            if (new DateTime(hoje.Year, Nascimento.Mes, Nascimento.Dia) > hoje) idade--;
+            return idade;
+        }
+        public string TelefonePrincipal() => Telefones.FirstOrDefault(t => t.Principal)?.Numero ?? Telefones.FirstOrDefault()?.Numero ?? "";
+        public override string ToString() => $"{Nome} | {Email} | {Nascimento} | {TelefonePrincipal()}";
+    }
+
+    static class Program
+    {
+        [STAThread]
+        static void Main()
+        {
+            ApplicationConfiguration.Initialize();
+            Application.Run(new AgendaForm());
+        }
+    }
+
+    public class AgendaForm : Form
+    {
+        private readonly List<Contato> contatos = new();
+        private readonly TextBox txtNome = new() { Width = 220 };
+        private readonly TextBox txtEmail = new() { Width = 220 };
+        private readonly DateTimePicker dtNascimento = new() { Format = DateTimePickerFormat.Short, Width = 120 };
+        private readonly TextBox txtTipo = new() { Width = 100, Text = "Celular" };
+        private readonly TextBox txtTelefone = new() { Width = 180 };
+        private readonly CheckBox chkPrincipal = new() { Text = "Principal", AutoSize = true, Checked = true };
+        private readonly ListBox lstContatos = new() { Dock = DockStyle.Fill };
+        public AgendaForm()
+        {
+            Text = "Agenda de Contatos"; Width = 760; Height = 500; StartPosition = FormStartPosition.CenterScreen;
+            var campos = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 170, Padding = new Padding(12), AutoScroll = true };
+            AddCampo(campos, "Nome", txtNome); AddCampo(campos, "E-mail", txtEmail);
+            AddCampo(campos, "Nascimento", dtNascimento); AddCampo(campos, "Tipo telefone", txtTipo);
+            AddCampo(campos, "Número", txtTelefone); campos.Controls.Add(chkPrincipal);
+            var botoes = new FlowLayoutPanel { Dock = DockStyle.Top, Height = 45, Padding = new Padding(8) };
+            foreach (var (texto, acao) in new (string, Action)[] {
+                ("Adicionar", Adicionar), ("Pesquisar", Pesquisar), ("Alterar", Alterar),
+                ("Remover", Remover), ("Limpar", LimparCampos) })
+            {
+                var b = new Button { Text = texto, AutoSize = true };
+                b.Click += (_, _) => acao(); botoes.Controls.Add(b);
+            }
+            lstContatos.SelectedIndexChanged += (_, _) => PreencherCampos();
+            Controls.Add(lstContatos); Controls.Add(botoes); Controls.Add(campos);
+            AtualizarLista();
+        }
+        private static void AddCampo(FlowLayoutPanel p, string label, Control c)
+        {
+            var box = new FlowLayoutPanel { FlowDirection = FlowDirection.TopDown, AutoSize = true, WrapContents = false, Margin = new Padding(5) };
+            box.Controls.Add(new Label { Text = label, AutoSize = true }); box.Controls.Add(c); p.Controls.Add(box);
+        }
+        private Contato LerFormulario()
+        {
+            if (string.IsNullOrWhiteSpace(txtNome.Text) || string.IsNullOrWhiteSpace(txtEmail.Text))
+                throw new InvalidOperationException("Informe nome e e-mail.");
+            var c = new Contato { Nome = txtNome.Text.Trim(), Email = txtEmail.Text.Trim(), Nascimento = new DataNascimento(dtNascimento.Value) };
+            if (!string.IsNullOrWhiteSpace(txtTelefone.Text))
+                c.Telefones.Add(new Telefone { Tipo = txtTipo.Text.Trim(), Numero = txtTelefone.Text.Trim(), Principal = chkPrincipal.Checked });
+            return c;
+        }
+        private void Adicionar()
+        {
+            try {
+                var c = LerFormulario();
+                if (contatos.Any(x => x.Email.Equals(c.Email, StringComparison.OrdinalIgnoreCase))) { Aviso("Já existe um contato com esse e-mail."); return; }
+                contatos.Add(c); AtualizarLista(); LimparCampos(); Aviso("Contato adicionado.");
+            } catch (Exception ex) { Aviso(ex.Message); }
+        }
+        private void Pesquisar()
+        {
+            string email = txtEmail.Text.Trim();
+            var c = contatos.FirstOrDefault(x => x.Email.Equals(email, StringComparison.OrdinalIgnoreCase));
+            if (c == null) { Aviso("Contato não encontrado."); return; }
+            lstContatos.SelectedItem = c; Preencher(c);
+        }
+        private void Alterar()
+        {
+            if (lstContatos.SelectedItem is not Contato selecionado) { Aviso("Selecione um contato na lista."); return; }
+            try {
+                var novo = LerFormulario();
+                if (contatos.Any(x => x != selecionado && x.Email.Equals(novo.Email, StringComparison.OrdinalIgnoreCase))) { Aviso("Esse e-mail já está cadastrado."); return; }
+                int i = contatos.IndexOf(selecionado); contatos[i] = novo; AtualizarLista(); Aviso("Contato alterado.");
+            } catch (Exception ex) { Aviso(ex.Message); }
+        }
+        private void Remover()
+        {
+            if (lstContatos.SelectedItem is not Contato c) { Aviso("Selecione um contato."); return; }
+            contatos.Remove(c); AtualizarLista(); LimparCampos();
+        }
+        private void AtualizarLista()
+        {
+            lstContatos.Items.Clear();
+            foreach (var c in contatos) lstContatos.Items.Add(c);
+        }
+        private void PreencherCampos()
+        {
+            if (lstContatos.SelectedItem is Contato c) Preencher(c);
+        }
+        private void Preencher(Contato c)
+        {
+            txtNome.Text = c.Nome; txtEmail.Text = c.Email; dtNascimento.Value = new DateTime(c.Nascimento.Ano, c.Nascimento.Mes, c.Nascimento.Dia);
+            var t = c.Telefones.FirstOrDefault();
+            txtTipo.Text = t?.Tipo ?? ""; txtTelefone.Text = t?.Numero ?? ""; chkPrincipal.Checked = t?.Principal ?? false;
+        }
+        private void LimparCampos()
+        {
+            txtNome.Clear(); txtEmail.Clear(); txtTipo.Text = "Celular"; txtTelefone.Clear(); chkPrincipal.Checked = true; lstContatos.ClearSelected();
+        }
+        private static void Aviso(string msg) => MessageBox.Show(msg, "Agenda", MessageBoxButtons.OK, MessageBoxIcon.Information);
+    }
+}
