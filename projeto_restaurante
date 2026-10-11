@@ -1,0 +1,125 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Item
+{
+    public int Id { get; set; }
+    public string Descricao { get; set; } = "";
+    public decimal Preco { get; set; }
+    public override string ToString() => $"{Id} - {Descricao} (R$ {Preco:F2})";
+}
+
+class Pedido
+{
+    public int Id { get; set; }
+    public string Cliente { get; set; } = "";
+    public List<Item> Itens { get; } = new();
+
+    public bool AdicionarItem(Item item)
+    {
+        if (Itens.Count >= 10) return false;
+        Itens.Add(item);
+        return true;
+    }
+    public bool RemoverItem(int idItem)
+    {
+        var item = Itens.FirstOrDefault(i => i.Id == idItem);
+        return item != null && Itens.Remove(item);
+    }
+    public string ObterResumo() =>
+        $"Pedido #{Id} | Cliente: {Cliente} | Itens: {Itens.Count} | Total: R$ {CalcularTotal():F2}";
+    public decimal CalcularTotal() => Itens.Sum(i => i.Preco);
+}
+
+class Restaurante
+{
+    private const int MaxPedidos = 50;
+    private readonly List<Item> cardapio = new();
+    private readonly Pedido?[] pedidos = new Pedido?[MaxPedidos];
+    private int proximoIdItem = 1, proximoIdPedido = 1;
+
+    public Restaurante()
+    {
+        cardapio.Add(new Item { Id = proximoIdItem++, Descricao = "Hambúrguer", Preco = 25m });
+        cardapio.Add(new Item { Id = proximoIdItem++, Descricao = "Pizza", Preco = 40m });
+        cardapio.Add(new Item { Id = proximoIdItem++, Descricao = "Suco", Preco = 8m });
+    }
+    public void ListarCardapio()
+    {
+        Console.WriteLine("\n--- CARDÁPIO ---");
+        foreach (var item in cardapio) Console.WriteLine(item);
+    }
+    public Pedido? CriarPedido(string cliente)
+    {
+        int indice = Array.FindIndex(pedidos, p => p == null);
+        if (indice < 0) return null;
+        var pedido = new Pedido { Id = proximoIdPedido++, Cliente = cliente };
+        pedidos[indice] = pedido;
+        return pedido;
+    }
+    public Pedido? BuscarPedido(int id) => pedidos.FirstOrDefault(p => p?.Id == id);
+    public bool CancelarPedido(int id)
+    {
+        int indice = Array.FindIndex(pedidos, p => p?.Id == id);
+        if (indice < 0) return false;
+        pedidos[indice] = null;
+        return true;
+    }
+    public Pedido?[] ListarPedidos() => pedidos;
+    public List<Item> Cardapio => cardapio;
+}
+
+class Program
+{
+    static int LerInt(string msg)
+    {
+        Console.Write(msg);
+        return int.TryParse(Console.ReadLine(), out int n) ? n : -1;
+    }
+    static void Main()
+    {
+        var restaurante = new Restaurante();
+        bool sair = false;
+        while (!sair)
+        {
+            Console.WriteLine("\n=== RESTAURANTE ===\n0 Sair\n1 Criar novo pedido\n2 Adicionar item ao pedido\n3 Remover item do pedido\n4 Consultar pedido\n5 Cancelar pedido\n6 Listar todos os pedidos");
+            switch (LerInt("Opção: "))
+            {
+                case 0: sair = true; break;
+                case 1:
+                    Console.Write("Nome do cliente: ");
+                    var pedido = restaurante.CriarPedido(Console.ReadLine() ?? "");
+                    Console.WriteLine(pedido == null ? "Limite de 50 pedidos atingido." : $"Pedido #{pedido.Id} criado.");
+                    break;
+                case 2:
+                    int idP = LerInt("ID do pedido: ");
+                    var p = restaurante.BuscarPedido(idP);
+                    if (p == null) { Console.WriteLine("Pedido não encontrado."); break; }
+                    restaurante.ListarCardapio();
+                    int idI = LerInt("ID do item do cardápio: ");
+                    var item = restaurante.Cardapio.FirstOrDefault(i => i.Id == idI);
+                    Console.WriteLine(item == null ? "Item não encontrado." : p.AdicionarItem(item) ? "Item adicionado." : "O pedido já possui 10 itens.");
+                    break;
+                case 3:
+                    p = restaurante.BuscarPedido(LerInt("ID do pedido: "));
+                    if (p == null) { Console.WriteLine("Pedido não encontrado."); break; }
+                    Console.WriteLine(p.RemoverItem(LerInt("ID do item a remover: ")) ? "Item removido." : "Item não encontrado no pedido.");
+                    break;
+                case 4:
+                    p = restaurante.BuscarPedido(LerInt("ID do pedido: "));
+                    if (p == null) Console.WriteLine("Pedido não encontrado.");
+                    else { Console.WriteLine(p.ObterResumo()); foreach (var i in p.Itens) Console.WriteLine("  " + i); }
+                    break;
+                case 5:
+                    Console.WriteLine(restaurante.CancelarPedido(LerInt("ID do pedido: ")) ? "Pedido cancelado." : "Pedido não encontrado.");
+                    break;
+                case 6:
+                    foreach (var x in restaurante.ListarPedidos().Where(x => x != null))
+                        Console.WriteLine(x!.ObterResumo());
+                    break;
+                default: Console.WriteLine("Opção inválida."); break;
+            }
+        }
+    }
+}
